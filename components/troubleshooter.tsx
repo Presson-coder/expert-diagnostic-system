@@ -1,41 +1,41 @@
-"use client"
+"use client";
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useRef } from "react";
 import {
   diagnosticNodes,
   diagnosticResults,
   type DiagnosticNode,
   type DiagnosticResult,
-} from "@/lib/decision-tree"
-import { DiagnosticWizard } from "./diagnostic-wizard"
-import { TroubleshootingLog } from "./troubleshooting-log"
-import { ResultsPage } from "./results-page"
-import { DecisionBreadcrumb } from "./decision-breadcrumb"
-import { Progress } from "@/components/ui/progress"
-import { Wifi, RotateCcw } from "lucide-react"
-import { Button } from "@/components/ui/button"
+} from "@/lib/decision-tree";
+import { DiagnosticWizard } from "./diagnostic-wizard";
+import { TroubleshootingLog } from "./troubleshooting-log";
+import { ResultsPage } from "./results-page";
+import { DecisionBreadcrumb } from "./decision-breadcrumb";
+import { Progress } from "@/components/ui/progress";
+import { Wifi, RotateCcw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export interface LogEntry {
-  id: number
-  timestamp: Date
-  type: "answer" | "thought" | "result"
-  category: string
-  content: string
+  id: number;
+  timestamp: Date;
+  type: "answer" | "thought" | "result";
+  category: string;
+  content: string;
 }
 
 export interface HistoryStep {
-  nodeId: string
-  selectedOptionId: string
-  selectedLabel: string
+  nodeId: string;
+  selectedOptionId: string;
+  selectedLabel: string;
 }
 
-const totalSteps = 7
+const totalSteps = 7;
 
 export function Troubleshooter() {
-  const [currentNodeId, setCurrentNodeId] = useState("start")
-  const [result, setResult] = useState<DiagnosticResult | null>(null)
+  const [currentNodeId, setCurrentNodeId] = useState("start");
+  const [result, setResult] = useState<DiagnosticResult | null>(null);
   const [logEntries, setLogEntries] = useState<LogEntry[]>(() => {
-    const startNode = diagnosticNodes["start"]
+    const startNode = diagnosticNodes["start"];
     return [
       {
         id: 1,
@@ -44,44 +44,42 @@ export function Troubleshooter() {
         category: startNode.category,
         content: startNode.expertThought,
       },
-    ]
-  })
-  const [history, setHistory] = useState<HistoryStep[]>([])
-  const [logIdCounter, setLogIdCounter] = useState(2)
+    ];
+  });
+  const [history, setHistory] = useState<HistoryStep[]>([]);
+  const logIdCounterRef = useRef(2);
 
-  const currentNode: DiagnosticNode | undefined = diagnosticNodes[currentNodeId]
+  const currentNode: DiagnosticNode | undefined =
+    diagnosticNodes[currentNodeId];
 
   const progressValue = result
     ? 100
-    : Math.min(((history.length + 1) / totalSteps) * 100, 95)
+    : Math.min(((history.length + 1) / totalSteps) * 100, 95);
 
   const addLogEntry = useCallback(
     (type: LogEntry["type"], category: string, content: string) => {
-      setLogIdCounter((prev) => {
-        const newId = prev
-        setLogEntries((entries) => [
-          ...entries,
-          { id: newId, timestamp: new Date(), type, category, content },
-        ])
-        return prev + 1
-      })
+      const newId = logIdCounterRef.current++;
+      setLogEntries((entries) => [
+        ...entries,
+        { id: newId, timestamp: new Date(), type, category, content },
+      ]);
     },
-    []
-  )
+    [],
+  );
 
   const handleAnswer = useCallback(
     (optionId: string) => {
-      if (!currentNode) return
+      if (!currentNode) return;
 
-      const selectedOption = currentNode.options.find((o) => o.id === optionId)
-      if (!selectedOption) return
+      const selectedOption = currentNode.options.find((o) => o.id === optionId);
+      if (!selectedOption) return;
 
       // Log the answer
       addLogEntry(
         "answer",
         currentNode.category,
-        `${currentNode.question} \u2192 ${selectedOption.label}`
-      )
+        `${currentNode.question} \u2192 ${selectedOption.label}`,
+      );
 
       // Track history
       setHistory((prev) => [
@@ -91,43 +89,39 @@ export function Troubleshooter() {
           selectedOptionId: optionId,
           selectedLabel: selectedOption.label,
         },
-      ])
+      ]);
 
-      const nextTarget = currentNode.next[optionId]
+      const nextTarget = currentNode.next[optionId];
 
       if (nextTarget.startsWith("RESULT:")) {
-        const resultId = nextTarget.replace("RESULT:", "")
-        const diagResult = diagnosticResults[resultId]
+        const resultId = nextTarget.replace("RESULT:", "");
+        const diagResult = diagnosticResults[resultId];
         if (diagResult) {
           addLogEntry(
             "thought",
             "Analysis Complete",
-            `Diagnosis complete. ${diagResult.matchPercentage}% confidence: ${diagResult.title}`
-          )
-          addLogEntry(
-            "result",
-            "Solution Found",
-            diagResult.title
-          )
-          setResult(diagResult)
+            `Diagnosis complete. ${diagResult.matchPercentage}% confidence: ${diagResult.title}`,
+          );
+          addLogEntry("result", "Solution Found", diagResult.title);
+          setResult(diagResult);
         }
       } else {
-        const nextNode = diagnosticNodes[nextTarget]
+        const nextNode = diagnosticNodes[nextTarget];
         if (nextNode) {
-          addLogEntry("thought", nextNode.category, nextNode.expertThought)
-          setCurrentNodeId(nextTarget)
+          addLogEntry("thought", nextNode.category, nextNode.expertThought);
+          setCurrentNodeId(nextTarget);
         }
       }
     },
-    [currentNode, addLogEntry]
-  )
+    [currentNode, addLogEntry],
+  );
 
   const handleReset = useCallback(() => {
-    setCurrentNodeId("start")
-    setResult(null)
-    setHistory([])
-    const startNode = diagnosticNodes["start"]
-    setLogIdCounter(2)
+    setCurrentNodeId("start");
+    setResult(null);
+    setHistory([]);
+    const startNode = diagnosticNodes["start"];
+    logIdCounterRef.current = 2;
     setLogEntries([
       {
         id: 1,
@@ -136,8 +130,8 @@ export function Troubleshooter() {
         category: startNode.category,
         content: startNode.expertThought,
       },
-    ])
-  }, [])
+    ]);
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -219,5 +213,5 @@ export function Troubleshooter() {
         </div>
       </main>
     </div>
-  )
+  );
 }
