@@ -111,7 +111,7 @@ export function TroubleshootingLog({ entries }: TroubleshootingLogProps) {
                       >
                         {config.label}
                       </Badge>
-                      <span className="text-[10px] text-muted-foreground font-mono">
+                      <span className="text-[10px] text-muted-foreground font-mono" suppressHydrationWarning>
                         {formatTime(entry.timestamp)}
                       </span>
                     </div>
